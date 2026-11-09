@@ -1,0 +1,643 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later - Copyright (C) 2026 Hotdobb - m3u2satip, see LICENSE -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bridge panel</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#eef1f2; --surface:#ffffff; --surface2:#f6f8f8;
+  --line:#d3dadb; --line-strong:#b6c1c2;
+  --text:#14201f; --muted:#5a696a;
+  --accent:#0e5f5a; --accent-text:#ffffff;
+  --good:#1d7a4c; --good-soft:rgba(29,122,76,.12);
+  --warn:#8a5600; --warn-soft:rgba(138,86,0,.14);
+  --bad:#a8271d; --bad-soft:rgba(168,39,29,.12);
+  --shadow:0 1px 2px rgba(20,32,31,.06), 0 1px 1px rgba(20,32,31,.04);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#101616; --surface:#18201f; --surface2:#141b1b;
+    --line:#2b3635; --line-strong:#3d4a49;
+    --text:#e6ecea; --muted:#93a3a2;
+    --accent:#5fc0b6; --accent-text:#0b1413;
+    --good:#5ac68b; --good-soft:rgba(90,198,139,.14);
+    --warn:#dfae5c; --warn-soft:rgba(223,174,92,.14);
+    --bad:#ef9088; --bad-soft:rgba(239,144,136,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 56px}
+header{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;margin-bottom:4px}
+h1{font-size:23px;font-weight:700;margin:0;letter-spacing:-.015em}
+.version{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.lang{margin-left:auto;display:inline-flex;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden}
+.lang button{font:inherit;font-size:12.5px;background:transparent;color:var(--muted);border:0;padding:4px 10px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--accent);color:var(--accent-text);font-weight:600}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px}
+.pill{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:5px 13px 5px 10px;font-size:13px;box-shadow:var(--shadow)}
+.pill b{font-weight:600;font-variant-numeric:tabular-nums}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--line-strong)}
+.dot.ok{background:var(--good)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);
+  margin-bottom:16px;overflow:hidden;min-width:0}
+.card>h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;
+  margin:0;padding:12px 16px 10px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.card .in{padding:14px 16px}
+.health{list-style:none;margin:0;padding:0}
+.health li{display:flex;gap:10px;align-items:flex-start;padding:9px 16px;border-bottom:1px solid var(--line);font-size:13.5px}
+.health li:last-child{border-bottom:0}
+.health .dot{margin-top:7px}
+.health small{display:block;color:var(--muted);font-size:12.5px}
+nav{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:18px}
+nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 13px;
+  font:inherit;font-size:14px;cursor:pointer;border-radius:6px 6px 0 0}
+nav button:hover{color:var(--text);background:var(--surface2)}
+nav button[aria-selected="true"]{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px;align-items:start}
+.cols>.card{margin-bottom:0}
+dl.kv{display:grid;grid-template-columns:1fr auto;gap:2px 16px;margin:0}
+dl.kv dt{color:var(--muted);font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--line);min-width:0}
+dl.kv dd{margin:0;padding:6px 0;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;
+  border-bottom:1px solid var(--line);min-width:0;overflow-wrap:anywhere}
+dl.kv dt:last-of-type,dl.kv dd:last-of-type{border-bottom:0}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
+  white-space:nowrap;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--line)}
+td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+th.num{font-family:inherit;font-size:11.5px}
+.sub{color:var(--muted);font-size:12.5px}
+.tag{display:inline-block;font-size:11px;border:1px solid var(--line-strong);border-radius:5px;padding:0 6px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:12.5px;background:transparent;color:var(--muted);border:0;padding:4px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-text);font-weight:600}
+.btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-text);
+  border:1px solid transparent;border-radius:7px;padding:8px 15px}
+.btn.quiet{background:transparent;color:var(--text);border-color:var(--line-strong);font-weight:500}
+.btn.danger{background:transparent;color:var(--bad);border-color:var(--bad);font-weight:500}
+.btn.small{font-size:12.5px;padding:4px 10px}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface2)}
+input[type=search],select{font:inherit;font-size:14px;color:var(--text);background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:7px;padding:6px 10px;min-width:0}
+input[type=search]{flex:1 1 220px;max-width:320px}
+label.check{display:inline-flex;gap:6px;align-items:center;font-size:13.5px}
+pre.log{margin:0;padding:14px 16px;background:var(--surface2);font-family:var(--mono);font-size:12px;line-height:1.6;
+  height:380px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+pre.log .t{color:var(--muted)} pre.log .hm{color:var(--warn)} pre.log .bd{color:var(--bad)}
+.banner{display:none;gap:10px;align-items:center;background:var(--warn-soft);border:1px solid var(--line);
+  border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:13.5px}
+.banner.show{display:flex}
+.planned{list-style:none;margin:0;padding:0}
+.planned li{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.planned li:last-child{border-bottom:0}
+.empty{padding:16px;color:var(--muted);font-size:13.5px}
+.field{margin-bottom:18px}
+.field .lab{display:block;font-weight:600;font-size:13.5px;margin-bottom:4px}
+.field input[type=url],.field input[type=text]{width:100%;font:inherit;font-size:14px;color:var(--text);background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:7px;padding:7px 10px}
+.field .help{display:block;color:var(--muted);font-size:12.5px;margin-top:5px}
+.field .res{display:block;font-size:12.5px;margin-top:5px}
+.res.ok{color:var(--good)} .res.bad{color:var(--bad)}
+.choice{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:13.5px}
+.choice label{display:flex;gap:8px;align-items:flex-start}
+.note{background:var(--warn-soft);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;margin:0 0 14px}
+@media (max-width:560px){
+  dl.kv{grid-template-columns:1fr}
+  dl.kv dd{text-align:left}
+  dl.kv dt{border-bottom:0;padding-bottom:0}
+  .lang{margin-left:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 data-t="title">Bridge panel</h1>
+    <span class="version" id="ver">…</span>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="de" aria-pressed="false">DE</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"><span class="dot warn"></span><span id="bannertext"></span></div>
+
+  <div class="pills" id="pills"></div>
+
+  <div class="card">
+    <h2 data-t="health">Health</h2>
+    <ul class="health" id="health"></ul>
+  </div>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="tvs" aria-selected="true" data-t="tab_tvs">TVs</button>
+    <button role="tab" data-tab="status" aria-selected="false" data-t="tab_status">Status &amp; log</button>
+    <button role="tab" data-tab="channels" aria-selected="false" data-t="tab_channels">Channels</button>
+    <button role="tab" data-tab="sources" aria-selected="false" data-t="tab_sources">Sources &amp; technology</button>
+  </nav>
+
+  <!-- TVs -->
+  <section id="tab-tvs">
+    <div class="card">
+      <h2 data-t="tvs">TVs</h2>
+      <div class="scroll"><table>
+        <thead><tr>
+          <th data-t="col_tv">TV</th><th data-t="col_watching">Watching</th><th class="num" data-t="col_rate">Rate</th>
+          <th data-t="col_profile">Profile</th><th data-t="col_macip">MAC · IP</th><th data-t="col_seen">Last seen</th><th></th>
+        </tr></thead>
+        <tbody id="tvrows"></tbody>
+      </table></div>
+      <div class="in">
+        <div class="row">
+          <button class="btn danger" type="button" id="forgetall" data-t="forget_all">Forget all (reset)</button>
+        </div>
+        <p class="hint" data-t="tvs_hint">TVs are recognised by MAC address and register themselves.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS & LOG -->
+  <section id="tab-status" hidden>
+    <div class="cols">
+      <div class="card">
+        <h2 data-t="state">State</h2>
+        <div class="in"><dl class="kv" id="statekv"></dl></div>
+      </div>
+      <div class="card">
+        <h2 data-t="control">Control</h2>
+        <div class="in">
+          <div class="row">
+            <button class="btn quiet" type="button" id="restart" data-t="restart">Restart</button>
+          </div>
+          <p class="hint" id="restarthint" data-t="restart_hint">…</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 data-t="log">Log</h2>
+      <div class="tools">
+        <label for="logtv" class="sub" data-t="log_tv">TV</label>
+        <select id="logtv"></select>
+        <label class="check"><input type="checkbox" id="lognotable"> <span data-t="log_notable">only notable</span></label>
+        <label class="check"><input type="checkbox" id="logfollow" checked> <span data-t="log_follow">follow</span></label>
+      </div>
+      <pre class="log" id="log"></pre>
+    </div>
+  </section>
+
+  <!-- CHANNELS -->
+  <section id="tab-channels" hidden>
+    <div class="card">
+      <h2 data-t="channels">Channels</h2>
+      <div class="tools">
+        <input type="search" id="search" data-tp="search" placeholder="Search …">
+        <select id="source">
+          <option value="" data-t="src_all">all sources</option>
+          <option value="init7" data-t="src1">Source 1</option>
+          <option value="hls" data-t="src2">Source 2</option>
+        </select>
+        <span class="sub" id="hits"></span>
+      </div>
+      <div class="scroll"><table>
+        <thead><tr>
+          <th class="num" data-t="col_no">No.</th><th data-t="col_channel">Channel</th><th data-t="col_source">Source</th>
+          <th data-t="col_lang">Language</th><th class="num" data-t="col_freq">Frequency</th>
+          <th class="num" data-t="col_slot">Slot</th><th class="num" data-t="col_sid">Service</th>
+        </tr></thead>
+        <tbody id="chrows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- SOURCES & TECHNOLOGY -->
+  <section id="tab-sources" hidden>
+    <div class="cols">
+      <div class="card">
+        <h2 data-t="sources">Sources</h2>
+        <div class="in">
+          <p class="note" id="srcnote" hidden></p>
+          <div class="field">
+            <label class="lab" for="s1" data-t="k_init7">Source 1</label>
+            <input type="url" id="s1" spellcheck="false">
+            <span class="help" data-t="s1_help">M3U with multicast addresses (udp:// or rtp://).</span>
+            <span class="row" style="margin-top:6px"><button class="btn quiet small" type="button" data-check="source1" data-for="s1" data-t="check">Check</button></span>
+            <span class="res" id="s1res"></span>
+          </div>
+          <div class="field">
+            <label class="lab" for="s2" data-t="k_hlsurl">Source 2</label>
+            <label class="check" style="margin-bottom:6px"><input type="checkbox" id="s2on"> <span data-t="s2_on">switched on</span></label>
+            <input type="url" id="s2" spellcheck="false">
+            <span class="help" data-t="s2_help">M3U with HLS channels (iptv-org, VLC, Kodi, TiviMate format).</span>
+            <span class="row" style="margin-top:6px"><button class="btn quiet small" type="button" data-check="source2" data-for="s2" data-t="check">Check</button></span>
+            <span class="res" id="s2res"></span>
+            <div class="choice" id="s2choice" hidden>
+              <label><input type="radio" name="s2mode" value="keep" checked> <span data-t="s2_keep">keep</span></label>
+              <label><input type="radio" name="s2mode" value="reset"> <span data-t="s2_reset">reset</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lab" for="ep" data-t="k_epgurl">Programme guide</label>
+            <input type="url" id="ep" spellcheck="false">
+            <span class="help" data-t="ep_help">XMLTV, optionally gzip. Empty = no programme guide.</span>
+            <span class="row" style="margin-top:6px"><button class="btn quiet small" type="button" data-check="epg" data-for="ep" data-t="check">Check</button></span>
+            <span class="res" id="epres"></span>
+          </div>
+          <div class="row">
+            <button class="btn" type="button" id="savesrc" data-t="save">Save</button>
+            <button class="btn quiet" type="button" id="resetsrc" data-t="undo">Undo</button>
+          </div>
+          <p class="hint" id="savehint" data-t="save_hint">Takes effect after a restart of the bridge.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2 data-t="tech">Cable network (virtual)</h2>
+        <div class="in"><dl class="kv" id="techkv"></dl>
+          <p class="hint" data-t="tech_hint">Changing these moves channels to other frequencies.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span data-t="planned">Planned</span> <span class="tag" data-t="not_yet">not yet</span></h2>
+      <div class="in"><ul class="planned">
+        <li data-t="pl_edit">Edit network settings here</li>
+        <li data-t="pl_selftest">Built-in self-test of the own stream (counters, checksums, tables)</li>
+        <li data-t="pl_backup">Backup download and restore</li>
+        <li data-t="pl_pin">Optional PIN for buttons that change something</li>
+        <li data-t="pl_weekly">Weekly check whether the list of source 1 changed</li>
+      </ul></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------------------------------------------------------- texts */
+var T = {
+ en: {
+  title:"Bridge panel", health:"Health", tab_tvs:"TVs", tab_status:"Status & log",
+  tab_channels:"Channels", tab_sources:"Sources & technology", tvs:"TVs",
+  col_tv:"TV", col_watching:"Watching", col_rate:"Rate", col_profile:"Profile",
+  col_macip:"MAC · IP", col_seen:"Last seen", forget:"Forget", forget_all:"Forget all (reset)",
+  tvs_hint:"TVs are recognised by MAC address and register themselves; IP changes are tracked automatically. Switching the profile takes effect at once, without a new scan.",
+  state:"State", control:"Control", restart:"Restart",
+  restart_hint:"Restarts the bridge without a password: it exits and systemd starts it again within seconds. Running TVs continue after a short pause.",
+  restart_nosystemd:"Caution: this bridge is not running under systemd - after a restart it will NOT come back by itself.",
+  log:"Log", log_tv:"TV", log_notable:"only notable", log_follow:"follow", log_all:"all", log_bridge:"bridge only",
+  channels:"Channels", search:"Search …", src_all:"all sources", col_no:"No.", col_channel:"Channel",
+  col_source:"Source", col_lang:"Language", col_freq:"Frequency", col_slot:"Slot", col_sid:"Service",
+  hits:"{n} of {total}", sources:"Sources", sources_hint:"",
+  s1_help:"M3U with multicast addresses (udp:// or rtp://), e.g. your provider's channel list.",
+  s2_help:"M3U with HLS channels (formats of iptv-org, VLC, Kodi, TiviMate). Encrypted channels are skipped.",
+  s2_on:"switched on", ep_help:"XMLTV, also gzip. Empty = no programme guide.", check:"Check", save:"Save", undo:"Undo",
+  save_hint:"Saved changes take effect after a restart of the bridge (button under Status & log, or here after saving).",
+  s2_keep:"Keep the current channels 301 ff. and add new ones behind them (no scan needed for the existing ones)",
+  s2_reset:"Start over with the new list (new numbering - the TVs need a channel scan)",
+  chk_running:"checking …", chk_s1:"{n} multicast channels found", chk_s1_none:"no multicast channels in this list ({o} other entries) - this is not a list for source 1",
+  chk_s2:"{n} channels found{drm}", chk_drm:", {d} of them encrypted (skipped)", chk_s2_none:"no usable channels in this list",
+  chk_epg:"reachable, format {f}", chk_epg_bad:"reachable, but this does not look like XMLTV", chk_err:"not reachable: {e}", chk_scheme:"The address must start with http://, https:// or file://",
+  saved:"Saved.", saved_restart:"Saved. Restart now so the change takes effect?", nothing:"Nothing changed.",
+  warn_s1:"Source 1 changed: channels may move to other frequencies - the TVs then need a channel scan.",
+  cli_note:"Set by the command line (systemd unit), which wins over this page: {k}",
+  tech:"Cable network (virtual)", tech_hint:"Changing bundle size or frequencies moves channels to other frequencies - the TVs then need a new scan.",
+  planned:"Planned", not_yet:"not yet",
+  pl_edit:"Edit network settings (bundle size, band) here", pl_selftest:"Built-in self-test of the own stream (counters, checksums, tables)",
+  pl_backup:"Backup download and restore", pl_pin:"Optional PIN for buttons that change something",
+  pl_weekly:"Weekly check whether the list of source 1 changed",
+  p_channels:"channels", p_freqs:"frequencies", p_groups:"groups open", p_tvs:"TVs watching",
+  p_up:"up", unnamed:"unnamed", scanning:"channel scan / tables only", since:"since {t}",
+  mirror:"Panasonic identity", strict:"strict", legacy:"legacy", unknown_dev:"not registered",
+  k_version:"Version", k_uptime:"Running for", k_channels:"Channels", k_freqs:"Frequencies",
+  k_epg:"Programme guide", k_hls:"HLS check", k_devid:"SAT>IP device ID", k_groups:"Multicast groups open",
+  k_service:"Runs as service", yes:"yes", no:"no", k_init7:"Source 1 – multicast (udp/rtp)", k_epgurl:"Programme guide (XMLTV)",
+  k_hlsurl:"Source 2 – HLS via ffmpeg", k_bundle:"Channels per frequency", k_band:"Band", k_country:"Time zone country",
+  epg_loading:"loading …", epg_hours:"{hits} of {total} source-1 channels with programme, {h} h old", src1:"Source 1", src2:"Source 2", hls_stat:"{ok} deliver, {adm} admitted, {checked} checked",
+  hls_off:"off",
+  h_all_ok:"All fine", h_all_ok_d:"The bridge is running; nothing needs attention.",
+  h_init7_silent:"Source 1 delivers nothing for {s} s", h_init7_silent_d:"Internet works but no TV signal arrives? Restart the router first.",
+  h_channel_silent:"{name} delivers no data ({s} s)", h_channel_silent_d:"Free HLS channels come and go. The bridge keeps retrying by itself.",
+  h_epg_missing:"Programme guide not loaded (yet)", h_epg_missing_d:"It loads in the background after a start; if this stays, check the guide address.",
+  h_epg_old:"Programme guide is {h} h old", h_epg_old_d:"The next download is attempted automatically.",
+  h_hls_new:"{n} new channels of source 2 are waiting", h_hls_new_d:"They appear after a restart of the bridge and a channel scan on the TVs.",
+  c_forget:"Forget {name}? If it shows up again, it is registered as a new device.",
+  c_forget_mirror:" CAUTION: this TV has the Panasonic identity and will need a NEW channel scan.",
+  c_forget_all:"Forget ALL TVs? Each registers itself again when switched on. TVs with the Panasonic identity will need a NEW channel scan.",
+  c_restart:"Restart the bridge now?", r_running:"Restarting … ", r_back:"Bridge is back (new start {t}).",
+  r_fail:"No answer from the bridge yet. If it does not come back: sudo systemctl restart satipbridge",
+  offline:"No connection to the bridge - retrying …", err:"Error: {e}",
+  d:"{d} d", h:"{h} h", m:"{m} min"
+ },
+ de: {
+  title:"Brückenpult", health:"Gesundheit", tab_tvs:"Fernseher", tab_status:"Zustand & Protokoll",
+  tab_channels:"Sender", tab_sources:"Quellen & Technik", tvs:"Fernseher",
+  col_tv:"Fernseher", col_watching:"Schaut gerade", col_rate:"Daten", col_profile:"Profil",
+  col_macip:"MAC · IP", col_seen:"Zuletzt gesehen", forget:"Vergessen", forget_all:"Alle vergessen (Reset)",
+  tvs_hint:"Fernseher werden an der MAC-Adresse erkannt und tragen sich selbst ein; IP-Wechsel werden selbst nachgeführt. Das Profil umschalten wirkt sofort, ohne neuen Suchlauf.",
+  state:"Zustand", control:"Bedienen", restart:"Neu starten",
+  restart_hint:"Startet die Brücke ohne Passwort neu: sie beendet sich, systemd startet sie nach wenigen Sekunden wieder. Laufende Fernseher machen nach einer kurzen Pause weiter.",
+  restart_nosystemd:"Achtung: Diese Brücke läuft nicht unter systemd - nach einem Neustart kommt sie NICHT von selbst wieder.",
+  log:"Protokoll", log_tv:"Fernseher", log_notable:"nur Auffälliges", log_follow:"mitlaufen", log_all:"alle", log_bridge:"nur Brücke",
+  channels:"Sender", search:"Sender suchen …", src_all:"alle Quellen", col_no:"Nr.", col_channel:"Sender",
+  col_source:"Quelle", col_lang:"Sprache", col_freq:"Frequenz", col_slot:"Platz", col_sid:"Dienst",
+  hits:"{n} von {total}", sources:"Quellen", sources_hint:"",
+  s1_help:"M3U mit Multicast-Adressen (udp:// oder rtp://), z.B. die Senderliste deines Anbieters.",
+  s2_help:"M3U mit HLS-Sendern (Formate von iptv-org, VLC, Kodi, TiviMate). Verschlüsselte Sender werden übersprungen.",
+  s2_on:"eingeschaltet", ep_help:"XMLTV, auch gzip. Leer = kein Programmführer.", check:"Prüfen", save:"Speichern", undo:"Zurücksetzen",
+  save_hint:"Gespeicherte Änderungen wirken nach einem Neustart der Brücke (Knopf unter Zustand & Protokoll, oder hier nach dem Speichern).",
+  s2_keep:"Bisherige Sender 301 ff. behalten und neue dahinter anhängen (für die bisherigen kein Suchlauf nötig)",
+  s2_reset:"Mit der neuen Liste neu beginnen (neue Nummerierung - die Fernseher brauchen einen Suchlauf)",
+  chk_running:"prüfe …", chk_s1:"{n} Multicast-Sender gefunden", chk_s1_none:"keine Multicast-Sender in dieser Liste ({o} andere Einträge) - das ist keine Liste für Quelle 1",
+  chk_s2:"{n} Sender gefunden{drm}", chk_drm:", davon {d} verschlüsselt (werden übersprungen)", chk_s2_none:"keine brauchbaren Sender in dieser Liste",
+  chk_epg:"erreichbar, Format {f}", chk_epg_bad:"erreichbar, sieht aber nicht nach XMLTV aus", chk_err:"nicht erreichbar: {e}", chk_scheme:"Die Adresse muss mit http://, https:// oder file:// beginnen",
+  saved:"Gespeichert.", saved_restart:"Gespeichert. Jetzt neu starten, damit die Änderung wirkt?", nothing:"Nichts geändert.",
+  warn_s1:"Quelle 1 geändert: Sender können auf andere Frequenzen rutschen - die Fernseher brauchen dann einen Suchlauf.",
+  cli_note:"Von der Kommandozeile (systemd-Dienst) gesetzt, das hat Vorrang vor dieser Seite: {k}",
+  tech:"Kabelnetz (erfunden)", tech_hint:"Bündelgröße oder Frequenzen zu ändern verschiebt die Sender - die Fernseher brauchen dann einen neuen Suchlauf.",
+  planned:"Geplant", not_yet:"noch nicht",
+  pl_edit:"Netz-Einstellungen (Bündelgröße, Band) hier bearbeiten", pl_selftest:"Eingebauter Selbsttest des eigenen Stroms (Zähler, Prüfsummen, Tabellen)",
+  pl_backup:"Sicherung herunterladen und einspielen", pl_pin:"Optionale PIN für Knöpfe, die etwas ändern",
+  pl_weekly:"Wöchentliche Prüfung, ob sich die Liste von Quelle 1 geändert hat",
+  p_channels:"Sender", p_freqs:"Frequenzen", p_groups:"Gruppen offen", p_tvs:"Fernseher schauen",
+  p_up:"läuft seit", unnamed:"unbenannt", scanning:"Suchlauf / nur Tabellen", since:"seit {t}",
+  mirror:"Panasonic-Kennung", strict:"streng", legacy:"alt", unknown_dev:"nicht eingetragen",
+  k_version:"Version", k_uptime:"Läuft seit", k_channels:"Sender", k_freqs:"Frequenzen",
+  k_epg:"Programmführer", k_hls:"HLS-Prüfung", k_devid:"SAT>IP-Kennung", k_groups:"Multicast-Gruppen offen",
+  k_service:"Läuft als Dienst", yes:"ja", no:"nein", k_init7:"Quelle 1 – Multicast (udp/rtp)", k_epgurl:"Programmführer (XMLTV)",
+  k_hlsurl:"Quelle 2 – HLS über ffmpeg", k_bundle:"Sender je Frequenz", k_band:"Band", k_country:"Land der Zeitzone",
+  epg_loading:"lädt …", epg_hours:"{hits} von {total} Sendern aus Quelle 1 mit Programm, {h} Std alt", src1:"Quelle 1", src2:"Quelle 2", hls_stat:"{ok} liefern, {adm} aufgenommen, {checked} geprüft",
+  hls_off:"aus",
+  h_all_ok:"Alles in Ordnung", h_all_ok_d:"Die Brücke läuft, nichts braucht Aufmerksamkeit.",
+  h_init7_silent:"Quelle 1 liefert seit {s} s nichts", h_init7_silent_d:"Internet geht, aber kein Fernsehsignal? Zuerst den Router neu starten.",
+  h_channel_silent:"{name} liefert keine Daten ({s} s)", h_channel_silent_d:"Freie HLS-Sender kommen und gehen. Die Brücke versucht es selbst weiter.",
+  h_epg_missing:"Programmführer (noch) nicht geladen", h_epg_missing_d:"Er lädt nach dem Start im Hintergrund; bleibt das so, die Adresse prüfen.",
+  h_epg_old:"Programmführer ist {h} Std alt", h_epg_old_d:"Der nächste Abruf wird automatisch versucht.",
+  h_hls_new:"{n} neue Sender aus Quelle 2 warten", h_hls_new_d:"Sie erscheinen nach einem Neustart der Brücke und einem Suchlauf an den Fernsehern.",
+  c_forget:"{name} vergessen? Meldet er sich wieder, wird er als neues Gerät eingetragen.",
+  c_forget_mirror:" ACHTUNG: Dieser Fernseher hat die Panasonic-Kennung und braucht danach einen NEUEN Suchlauf.",
+  c_forget_all:"ALLE Fernseher vergessen? Jeder trägt sich beim Einschalten selbst wieder ein. Fernseher mit Panasonic-Kennung brauchen einen NEUEN Suchlauf.",
+  c_restart:"Brücke jetzt neu starten?", r_running:"Startet neu … ", r_back:"Brücke ist wieder da (neu gestartet {t}).",
+  r_fail:"Noch keine Antwort von der Brücke. Kommt sie nicht wieder: sudo systemctl restart satipbridge",
+  offline:"Keine Verbindung zur Brücke - versuche es weiter …", err:"Fehler: {e}",
+  d:"{d} T", h:"{h} Std", m:"{m} Min"
+ }
+};
+var lang;
+try { lang = localStorage.getItem("bridge.lang"); } catch(e) {}
+if (lang !== "de" && lang !== "en") lang = /^de/i.test(navigator.language || "") ? "de" : "en";
+function t(k, a){
+  var s = (T[lang] && T[lang][k]) || T.en[k] || k;
+  return s.replace(/\{(\w+)\}/g, function(_, n){ return a && a[n] != null ? a[n] : ""; });
+}
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function applyStatic(){
+  document.documentElement.lang = lang;
+  document.title = t("title");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-t]"), function(el){ el.textContent = t(el.dataset.t); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tp]"), function(el){ el.placeholder = t(el.dataset.tp); });
+  Array.prototype.forEach.call(document.querySelectorAll(".lang button"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === lang)); });
+}
+Array.prototype.forEach.call(document.querySelectorAll(".lang button"), function(b){
+  b.addEventListener("click", function(){
+    lang = b.dataset.lang;
+    try { localStorage.setItem("bridge.lang", lang); } catch(e) {}
+    applyStatic(); if (STATE) render(STATE); renderChannels(); rebuildLog();
+  });
+});
+
+/* ----------------------------------------------------------------- tabs */
+var tabs = Array.prototype.slice.call(document.querySelectorAll("nav button"));
+tabs.forEach(function(b){ b.addEventListener("click", function(){
+  tabs.forEach(function(x){ x.setAttribute("aria-selected", String(x === b)); });
+  ["tvs","status","channels","sources"].forEach(function(z){
+    document.getElementById("tab-" + z).hidden = (z !== b.dataset.tab); });
+  if (b.dataset.tab === "channels" && !CHANNELS) loadChannels();
+}); });
+
+/* ------------------------------------------------------------- helpers */
+function dur(sec){
+  sec = Math.max(0, Math.floor(sec));
+  var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+  if (d) return t("d",{d:d}) + " " + t("h",{h:h});
+  if (h) return t("h",{h:h}) + " " + t("m",{m:m});
+  return t("m",{m:m});
+}
+function clock(ts){ var d = new Date(ts * 1000); return d.toLocaleTimeString(lang === "de" ? "de-CH" : "en-GB", {hour:"2-digit", minute:"2-digit"}); }
+function api(path, body){
+  var opt = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json","X-Bridge":"1"}, body:JSON.stringify(body)};
+  return fetch(path, opt).then(function(r){
+    return r.json().then(function(j){ if (!r.ok) throw new Error(j.error || r.status); return j; }); });
+}
+function banner(text){ var b = document.getElementById("banner");
+  document.getElementById("bannertext").textContent = text || ""; b.classList.toggle("show", !!text); }
+
+/* --------------------------------------------------------------- render */
+var STATE = null, RESTARTING = false;
+function render(s){
+  document.getElementById("ver").textContent = s.version + " · " + s.ip + " · " + t("p_up") + " " + dur(s.now - s.started);
+  var worst = s.health.some(function(h){return h.level==="bad";}) ? "bad" : s.health.some(function(h){return h.level==="warn";}) ? "warn" : "ok";
+  var watching = s.tvs.filter(function(x){ return x.watching.some(function(w){ return !w.scanning; }); }).length;
+  document.getElementById("pills").innerHTML =
+    '<span class="pill"><span class="dot ' + worst + '"></span>' + esc(t("h_" + s.health[0].key, s.health[0].args)) + '</span>' +
+    '<span class="pill"><b>' + s.channels + '</b>&nbsp;' + esc(t("p_channels")) + ' (' + esc(t("src1")) + ': ' + s.init7_channels + ' · ' + esc(t("src2")) + ': ' + s.hls_channels + ')</span>' +
+    '<span class="pill"><b>' + s.frequencies + '</b>&nbsp;' + esc(t("p_freqs")) + ' · ' + s.freq_min_mhz + '–' + s.freq_max_mhz + ' MHz</span>' +
+    '<span class="pill"><b>' + s.groups_open + '</b>&nbsp;' + esc(t("p_groups")) + '</span>' +
+    '<span class="pill"><b>' + watching + '</b>&nbsp;' + esc(t("p_tvs")) + '</span>';
+  document.getElementById("health").innerHTML = s.health.map(function(h){
+    return '<li><span class="dot ' + h.level + '"></span><span>' + esc(t("h_" + h.key, h.args)) +
+      '<small>' + esc(t("h_" + h.key + "_d", h.args)) + '</small></span></li>'; }).join("");
+  renderTvs(s); renderState(s); renderSources(s); fillLogFilter(s);
+}
+function renderTvs(s){
+  var rows = s.tvs.map(function(tv){
+    var live = tv.watching.filter(function(w){ return !w.scanning; });
+    var what = tv.watching.length ? tv.watching.map(function(w){
+      if (w.scanning) return '<span class="sub">' + esc(t("scanning")) + ' · ' + w.freq_mhz + ' MHz</span>';
+      return w.channels.map(function(c){ return esc(c.lcn + " " + c.name); }).join(", ") +
+        '<div class="sub">' + w.freq_mhz + ' MHz · ' + esc(t("since",{t:clock(w.since)})) + '</div>'; }).join("") : '<span class="sub">–</span>';
+    var rate = tv.watching.map(function(w){ return w.kbps == null ? "" : (w.kbps >= 1000 ? (w.kbps/1000).toFixed(1) + " Mbit/s" : w.kbps + " kbit/s"); }).join("<br>");
+    var prof = tv.mac ? '<div class="seg" role="group" data-mac="' + esc(tv.mac) + '">' +
+      ["strict","legacy"].map(function(p){ return '<button type="button" data-prof="' + p + '" aria-pressed="' + (tv.profile === p) + '">' + esc(t(p)) + '</button>'; }).join("") + '</div>'
+      : '<span class="sub">' + esc(t("unknown_dev")) + '</span>';
+    return '<tr><td><span class="dot ' + (live.length ? "ok" : "") + '" style="display:inline-block;margin-right:6px"></span><strong>' +
+      esc(tv.name || t("unnamed")) + '</strong>' + (tv.mirror ? '<div class="sub">' + esc(t("mirror")) + '</div>' : '') + '</td>' +
+      '<td>' + what + '</td><td class="num">' + rate + '</td><td>' + prof + '</td>' +
+      '<td class="num">' + esc(tv.mac || "–") + '<br>' + esc(tv.ip || "") + '</td><td class="num">' + esc(tv.last_seen || "–") + '</td>' +
+      '<td>' + (tv.mac ? '<button class="btn danger small" type="button" data-forget="' + esc(tv.mac) + '" data-name="' + esc(tv.name || tv.mac) + '" data-mirror="' + (tv.mirror ? 1 : 0) + '">' + esc(t("forget")) + '</button>' : '') + '</td></tr>';
+  });
+  document.getElementById("tvrows").innerHTML = rows.join("") || '<tr><td colspan="7" class="empty">–</td></tr>';
+}
+function kv(el, pairs){ document.getElementById(el).innerHTML = pairs.map(function(p){
+  return '<dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd>'; }).join(""); }
+function renderState(s){
+  var epg = s.epg ? (s.epg.loaded_at ? t("epg_hours",{hits:s.epg.hits, total:s.init7_channels, h:Math.floor((s.now - s.epg.loaded_at)/3600)}) : t("epg_loading")) : "–";
+  var hls = s.hls.enabled ? t("hls_stat",{ok:s.hls.delivering, adm:s.hls.admitted, checked:s.hls.checked}) : t("hls_off");
+  kv("statekv", [[t("k_version"), s.version], [t("k_uptime"), dur(s.now - s.started)],
+    [t("k_channels"), s.channels + " (" + t("src1") + ": " + s.init7_channels + " · " + t("src2") + ": " + s.hls_channels + ")"],
+    [t("k_freqs"), s.frequencies + " · " + s.freq_min_mhz + "–" + s.freq_max_mhz + " MHz"],
+    [t("k_epg"), epg], [t("k_hls"), hls], [t("k_devid"), s.device_id], [t("k_groups"), s.groups_open],
+    [t("k_service"), s.systemd ? t("yes") : t("no")]]);
+  document.getElementById("restarthint").textContent = s.systemd ? t("restart_hint") : t("restart_nosystemd");
+}
+var SETTINGS = null;
+function loadSettings(){
+  return api("/api/settings").then(function(j){
+    SETTINGS = j; var v = Object.assign({}, j.running, j.saved);
+    document.getElementById("s1").value = v.source1_url || "";
+    document.getElementById("s2").value = v.source2_url || "";
+    document.getElementById("s2on").checked = v.source2_enabled !== false;
+    document.getElementById("ep").value = v.epg_url || "";
+    document.getElementById("s2choice").hidden = true;
+    ["s1res","s2res","epres"].forEach(function(id){ document.getElementById(id).textContent = ""; });
+    var note = document.getElementById("srcnote");
+    note.hidden = !j.cli.length; note.textContent = j.cli.length ? t("cli_note",{k:j.cli.join(", ")}) : "";
+  }, function(){});
+}
+document.getElementById("s2").addEventListener("input", function(){
+  var orig = SETTINGS ? (SETTINGS.saved.source2_url || SETTINGS.running.source2_url) : "";
+  document.getElementById("s2choice").hidden = this.value.trim() === orig;
+});
+document.querySelector("#tab-sources").addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-check]"); if (!b) return;
+  var res = document.getElementById(b.dataset.for + "res"), kind = b.dataset.check;
+  res.className = "res"; res.textContent = t("chk_running"); b.disabled = true;
+  api("/api/check_source", {kind:kind, url:document.getElementById(b.dataset.for).value}).then(function(j){
+    b.disabled = false;
+    if (j.error){ res.className = "res bad"; res.textContent = /must start with/.test(j.error) ? t("chk_scheme") : t("chk_err",{e:j.error}); return; }
+    var txt;
+    if (kind === "source1") txt = j.multicast ? t("chk_s1",{n:j.multicast}) : t("chk_s1_none",{o:j.other});
+    else if (kind === "source2") txt = j.channels ? t("chk_s2",{n:j.channels, drm:j.drm ? t("chk_drm",{d:j.drm}) : ""}) : t("chk_s2_none");
+    else txt = j.ok ? t("chk_epg",{f:j.format}) : t("chk_epg_bad");
+    res.className = "res " + (j.ok ? "ok" : "bad"); res.textContent = txt;
+  }, function(e){ b.disabled = false; res.className = "res bad"; res.textContent = t("chk_err",{e:e.message}); });
+});
+document.getElementById("resetsrc").addEventListener("click", loadSettings);
+document.getElementById("savesrc").addEventListener("click", function(){
+  var body = {source1_url:document.getElementById("s1").value, source2_url:document.getElementById("s2").value,
+              source2_enabled:document.getElementById("s2on").checked, epg_url:document.getElementById("ep").value};
+  if (!document.getElementById("s2choice").hidden &&
+      document.querySelector("input[name=s2mode]:checked").value === "reset") body.source2_reset = true;
+  api("/api/settings", body).then(function(j){
+    if (!j.changed.length){ banner(t("nothing")); setTimeout(function(){ banner(""); }, 3000); return; }
+    var msg = (j.changed.indexOf("source1_url") !== -1 ? t("warn_s1") + "\n\n" : "") + t("saved_restart");
+    loadSettings();
+    if (confirm(msg)) doRestart();
+  }, function(e){ banner(t("err",{e:e.message})); });
+});
+function renderSources(s){
+  if (!SETTINGS) loadSettings();
+  kv("techkv", [[t("k_bundle"), s.bundle_size], [t("k_band"), s.freq_min_mhz + "–" + s.freq_max_mhz + " MHz"],
+    [t("k_freqs"), s.frequencies], [t("k_country"), s.country]]);
+}
+
+/* -------------------------------------------------------------- actions */
+document.getElementById("tvrows").addEventListener("click", function(ev){
+  var b = ev.target.closest("button"); if (!b) return;
+  if (b.dataset.prof){
+    var mac = b.parentNode.dataset.mac;
+    api("/api/device", {mac:mac, action:"profile", profile:b.dataset.prof}).then(poll, function(e){ banner(t("err",{e:e.message})); });
+  } else if (b.dataset.forget){
+    var q = t("c_forget",{name:b.dataset.name}) + (b.dataset.mirror === "1" ? t("c_forget_mirror") : "");
+    if (confirm(q)) api("/api/device", {mac:b.dataset.forget, action:"forget"}).then(poll, function(e){ banner(t("err",{e:e.message})); });
+  }
+});
+document.getElementById("forgetall").addEventListener("click", function(){
+  if (confirm(t("c_forget_all"))) api("/api/forget_all", {}).then(poll, function(e){ banner(t("err",{e:e.message})); });
+});
+document.getElementById("restart").addEventListener("click", function(){
+  if (confirm(t("c_restart"))) doRestart();
+});
+function doRestart(){
+  var before = STATE && STATE.started, btn = document.getElementById("restart"), tries = 0;
+  btn.disabled = true; RESTARTING = true; banner(t("r_running"));
+  api("/api/restart", {}).catch(function(){}).then(function(){
+    var iv = setInterval(function(){
+      tries++;
+      api("/api/state").then(function(s){
+        if (s.started !== before){ clearInterval(iv); btn.disabled = false; RESTARTING = false; banner(""); STATE = s; render(s);
+          LOGSEQ = 0; LOGLINES = []; pollLog(); alert(t("r_back",{t:clock(s.started)})); }
+      }, function(){});
+      if (tries > 30){ clearInterval(iv); btn.disabled = false; RESTARTING = false; banner(t("r_fail")); }
+    }, 1000);
+  });
+}
+
+/* ------------------------------------------------------------------ log */
+var LOGSEQ = 0, LOGLINES = [];
+function fillLogFilter(s){
+  var sel = document.getElementById("logtv"), cur = sel.value;
+  var opts = [["", t("log_all")], ["-", t("log_bridge")]].concat(s.tvs.filter(function(x){ return x.ip; }).map(function(x){
+    return [x.ip, (x.name || t("unnamed")) + " (" + x.ip + ")"]; }));
+  var seen = {}; opts = opts.filter(function(o){ if (seen[o[0]]) return false; seen[o[0]] = 1; return true; });
+  var html = opts.map(function(o){ return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join("");
+  if (sel.dataset.html !== html){ sel.innerHTML = html; sel.dataset.html = html; sel.value = cur; }
+}
+function lineMatches(l){
+  var f = document.getElementById("logtv").value;
+  if (document.getElementById("lognotable").checked && !/ ! |ERROR|FORGOTTEN|NEW device|new IP|Restart|failed|no data/i.test(l)) return false;
+  if (f === "-") return !/\b\d+\.\d+\.\d+\.\d+\s{2}/.test(l);
+  if (f) return l.indexOf(f + " ") !== -1 || l.indexOf(f + ":") !== -1 || l.indexOf(f + ")") !== -1;
+  return true;
+}
+function fmt(l){
+  var m = /^(\[[\d:]+\])(.*)$/.exec(l), body = m ? m[2] : l;
+  var cls = / ! |ERROR/.test(body) ? "bd" : /no data|FORGOTTEN|NEW device|new IP|Restart/i.test(body) ? "hm" : "";
+  return (m ? '<span class="t">' + esc(m[1]) + '</span>' : '') + (cls ? '<span class="' + cls + '">' + esc(body) + '</span>' : esc(body));
+}
+function rebuildLog(){
+  var el = document.getElementById("log");
+  el.innerHTML = LOGLINES.filter(lineMatches).map(fmt).join("\n");
+  if (document.getElementById("logfollow").checked) el.scrollTop = el.scrollHeight;
+}
+function pollLog(){
+  api("/api/log?since=" + LOGSEQ).then(function(j){
+    if (j.seq < LOGSEQ){ LOGLINES = []; }
+    LOGSEQ = j.seq; if (j.lines.length){ LOGLINES = LOGLINES.concat(j.lines).slice(-2000); rebuildLog(); }
+  }, function(){});
+}
+["logtv","lognotable"].forEach(function(id){ document.getElementById(id).addEventListener("change", rebuildLog); });
+
+/* ------------------------------------------------------------- channels */
+var CHANNELS = null;
+function loadChannels(){ api("/api/channels").then(function(c){ CHANNELS = c; renderChannels(); }, function(){}); }
+function renderChannels(){
+  if (!CHANNELS) return;
+  var q = (document.getElementById("search").value || "").toLowerCase(), src = document.getElementById("source").value;
+  var rows = CHANNELS.filter(function(c){
+    return (!src || c.source === src) && (!q || (c.name || "").toLowerCase().indexOf(q) !== -1 || String(c.lcn) === q); });
+  document.getElementById("hits").textContent = t("hits",{n:rows.length, total:CHANNELS.length});
+  document.getElementById("chrows").innerHTML = rows.slice(0, 600).map(function(c){
+    return '<tr><td class="num">' + c.lcn + '</td><td>' + esc(c.name) + '</td><td><span class="tag">' + esc(t(c.source === "hls" ? "src2" : "src1")) + '</span></td>' +
+      '<td>' + esc(c.language || "") + '</td><td class="num">' + c.freq_mhz.toFixed(2) + ' MHz</td><td class="num">' + (c.slot + 1) + '</td><td class="num">' + c.sid + '</td></tr>'; }).join("");
+}
+document.getElementById("search").addEventListener("input", renderChannels);
+document.getElementById("source").addEventListener("change", renderChannels);
+
+/* ---------------------------------------------------------------- polls */
+function poll(){
+  return api("/api/state").then(function(s){ STATE = s; banner(""); render(s); },
+    function(){ if (!RESTARTING) banner(t("offline")); });
+}
+applyStatic(); poll(); pollLog();
+setInterval(poll, 2000); setInterval(pollLog, 2000);
+})();
+</script>
+</body>
+</html>

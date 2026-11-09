@@ -1,0 +1,17 @@
+# State written by the bridge while running - not part of the project
+devices.json
+hls_state.json
+sessions.json
+settings.json
+pmt_cache.json
+*.new
+# Files of the German versions (up to 12), converted on first start
+geraete.json
+hls_status.json
+sitzungen.json
+# Python and local leftovers
+__pycache__/
+*.pyc
+*.log
+*.ts
+*.pcap
