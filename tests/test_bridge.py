@@ -233,6 +233,41 @@ class TestFixedHlsSlots(unittest.TestCase):
         self.assertEqual(names, [self.urls[5]])
 
 
+class TestDeviceRegistry(unittest.TestCase):
+    """Windows, phones and media players fetch the description of every
+    UPnP device; they must not end up as TVs. Only RTSP registers."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        B.opts = types.SimpleNamespace(
+            devices=os.path.join(self.tmp.name, "devices.json"),
+            new_profile="strict")
+        B.DEVICES.clear()
+        B._profile_cache.clear()
+        B._PENDING_NAMES.clear()
+        B._devices_stamp[:] = [0.0, 0.0]
+        self._mac_of = B.mac_of
+        B.mac_of = lambda ip: "02:00:00:00:00:0" + ip[-1]
+
+    def tearDown(self):
+        B.mac_of = self._mac_of
+        self.tmp.cleanup()
+
+    def test_description_only_does_not_register(self):
+        B.device_report("192.168.1.7", {})
+        self.assertFalse(B.is_mirror("192.168.1.7", create=False))
+        self.assertEqual(B.DEVICES, {})
+
+    def test_rtsp_registers_with_name_from_description(self):
+        reg = __import__("base64").b64encode(b"58DX804\x00\x00").decode()
+        B.device_report("192.168.1.8", {"X-PANASONIC-Registration": reg})
+        self.assertEqual(B.DEVICES, {})
+        B.device("192.168.1.8")                       # as on RTSP SETUP
+        entry = B.DEVICES["02:00:00:00:00:08"]
+        self.assertEqual((entry["name"], entry["profile"], entry["last_ip"]),
+                         ("58DX804", "strict", "192.168.1.8"))
+
+
 class TestSettings(unittest.TestCase):
 
     def test_url_check(self):

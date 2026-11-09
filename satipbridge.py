@@ -72,7 +72,7 @@ import urllib.parse
 
 # Shown on every start, so you always know which version is running -
 # increase it whenever a new version goes out.
-BRIDGE_VERSION = "16 (sources editable in the panel)"
+BRIDGE_VERSION = "17 (only RTSP registers devices)"
 
 TS = 188
 NULL_TS = bytes([0x47, 0x1F, 0xFF, 0x10]) + b"\xFF" * 184
@@ -1577,6 +1577,9 @@ class RtspHandler(socketserver.StreamRequestHandler):
             return
 
         if method == "SETUP":
+            # A device that wants a stream is a TV: register it now (with
+            # the model name it may have sent with the description).
+            device(peer)
             transport = headers.get("transport", "")
             m = re.search(r"client_port=(\d+)", transport)
             if not m:
@@ -1891,7 +1894,7 @@ class DescHandler(socketserver.StreamRequestHandler):
                 f"({M3U_COUNT} channels, {len(body)} bytes) <<<")
         else:
             device_report(self.client_address[0], self.headers)
-            mirror = is_mirror(self.client_address[0])
+            mirror = is_mirror(self.client_address[0], create=False)
             template = DDD_PANA if mirror else DDD
             if mirror:
                 log("        (Panasonic-style description)")
@@ -2000,6 +2003,9 @@ def _devices_save():
         log(f"  ! {fpath} not writable: {e}")
 
 
+_PENDING_NAMES = {}      # ip -> model name seen before the device registered
+
+
 def device(ip, name=None, create=True):
     """Entry for an IP; creates new devices (unless create=False).
     Never None."""
@@ -2029,15 +2035,20 @@ def device(ip, name=None, create=True):
             log(f"Device {entry.get('name') or ip}: learned MAC {mac}")
             changed = True
         elif mac and not create:
-            # A mere SSDP search (phone, media player ...): do not register.
-            # TVs enter the registry once they fetch the description or
-            # speak RTSP.
+            # A mere SSDP search or a look at the device description: do not
+            # register. Windows' network view, phone apps and media players
+            # fetch the description of every UPnP device on the LAN and
+            # would all end up as "TVs". Only RTSP - wanting to watch -
+            # registers a device. A model name seen here is kept for then.
+            if name:
+                _PENDING_NAMES[ip] = name
             return {"profile": getattr(opts, "new_profile", "strict"),
                     "mirror": False}
         elif mac:
             entry = {"profile": getattr(opts, "new_profile", "strict"),
                        "mirror": False, "last_ip": ip,
                        "first_seen": time.strftime("%Y-%m-%d %H:%M")}
+            name = name or _PENDING_NAMES.pop(ip, None)
             DEVICES[mac] = entry
             log(f"NEW device {mac} at {ip} - profile "
                 f"'{entry['profile']}' (change in {_devices_path()})")
@@ -2588,7 +2599,7 @@ def device_report(ip, headers):
                 "ascii", "replace").strip() or None
     except Exception:
         name = None
-    device(ip, name=name)
+    device(ip, name=name, create=False)
 
 
 def restamp_cc(packets, ccmap):
