@@ -106,5 +106,6 @@ GPL-3.0 oder neuer – siehe [LICENSE](LICENSE). Du darfst es nutzen, ändern un
 - Programmführer-Daten: [mathewmeconry/TV7_EPG_Data](https://github.com/mathewmeconry/TV7_EPG_Data)
 - HLS-Listen: [iptv-org/iptv](https://github.com/iptv-org/iptv)
 - SAT>IP Protocol Specification 1.2.2 (SES)
+- Entwickelt zusammen mit [Claude](https://claude.ai) (Anthropic), das einen großen Teil des Codes und der Tests geschrieben hat; geführt, an echten Fernsehern getestet und entschieden hat Hotdobb.
 
 Panasonic, VIERA, Init7, SAT>IP und andere Namen sind Marken ihrer Inhaber; dieses Projekt steht in keiner Verbindung zu ihnen.
